@@ -3,25 +3,31 @@ package com.springboot.task_manager.controllers;
 
 import com.springboot.task_manager.dtos.CreateTaskDTO;
 import com.springboot.task_manager.dtos.ErrorResponseDTO;
+import com.springboot.task_manager.dtos.TaskResponseDTO;
 import com.springboot.task_manager.dtos.UpdateTaskDTO;
 import com.springboot.task_manager.entities.TaskEntity;
+import com.springboot.task_manager.service.NotesService;
 import com.springboot.task_manager.service.TaskService;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.config.Task;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/tasks")
+@RequestMapping("/tasks")      //for global request
 public class TaskController {
     //Injecting task service
     private final TaskService taskService;
+    private final NotesService notesService;
+    private ModelMapper modelMapper=new ModelMapper();
+
     //Constructor
-    public TaskController(TaskService taskService)
+    public TaskController(TaskService taskService, NotesService notesService)
     {
         this.taskService=taskService;
+        this.notesService = notesService;
     }
     @GetMapping("")
     public ResponseEntity<List<TaskEntity>> getTasks()
@@ -32,14 +38,20 @@ public class TaskController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<TaskEntity> getTaskById(@PathVariable("id") Integer id)
+    public ResponseEntity<TaskResponseDTO> getTaskById(@PathVariable("id") Integer id)
     {
         var task=taskService.getTaskById(id);
+        var notes=notesService.getNotesForTask(id);
         if(task==null)
         {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(task);
+
+
+        var taskResponse=modelMapper.map(task, TaskResponseDTO.class);
+        taskResponse.setNotes(notes);
+        //task.setNotes(notes);
+        return ResponseEntity.ok(taskResponse);
     }
 
 
